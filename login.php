@@ -1,46 +1,93 @@
 <?php
 session_start();
-include_once('db.php');
-if(!isset($_SESSION['username'])){
-	
-		header('Location: index.php');
-	
-	die();
-}
-else{
-	if(isset($_POST['submit'])){
-	
 
+		
+	include_once('..//connection/db.php');
+
+	if(!isset($_SESSION['username'])){
+	header('location:../index.php');
+	}
+	
+else{	
+	$credit = 0;
+	$msg = "";
+	$Agent_id= $_SESSION['agent_id'];
+	$sql="select * from  profile where A='$Agent_id'";
+	$val1 = mysqli_query($db,$sql);
+	$row = mysqli_fetch_array($val1);
+	$credit = $row['credit'];
+	if(isset($_POST['submit'])){
 	$business = $_POST['business'];
 	$mobile = $_POST['mobile'];
 	
+	    
+		$name = $_SESSION['username'];
+	 $series=substr($mobile,0,4);
+	$series_query = mysqli_query($db,"select * from series where series='$series'");
+	  $find1=mysqli_num_rows($series_query);
+	  
 	//$db = mysqli_connect("localhost","root","","data");
 	
 	
 	
 	$query=mysqli_query($db,"SELECT * from business where mobile='$mobile'");
-    $find=mysqli_num_rows($query);
-	if($find>0){
-		
-		echo '<script>alert("number already exists")</script>';
-		
-	}
+	  
+    $find2= mysqli_num_rows($query);
 	
-	else{
+	if($find2>0){
+	echo '<script>alert("number already exists")</script>';
+	//$msg="number already exists";
 	
-	$sql = "insert into business(mobile,business) values('$mobile','$business')";
+		}
+	
+	
+		if($find1==1)
+	  {
+		  $lines=explode(",",$_POST["submit"]);
+			foreach($lines as $line)
+			{
+				list($mobile)=explode(",",$line);
+		  
+	$sql = "Insert into business(mobile) values('$mobile')";
 	
 	$res = mysqli_query($db,$sql);
 	if($res)
-	{
-		echo '<script> alert("number inseted successfully")</script>';
+	{		
+			$sql="select * from  profile where A='$Agent_id'";
+			$val1 = mysqli_query($db,$sql);
+			$row = mysqli_fetch_array($val1);
+			$credit = $row['credit'];
+			$credit= $credit+1;
+			$update = "update profile set credit='$credit' where A ='$Agent_id'";
+			$val1 = mysqli_query($db,$update);
+			echo $credit;
+		
+		echo '<script> alert("number inserted successfully")</script>';
+		
 	}
-
+			
+	  
 	
+	
+		else
+			{
+				
+		$sql = "insert into invalid(Agent_id,mobile,business) values('$Agent_id','$mobile','$business')";
+		$res = mysqli_query($db,$sql);
+		echo '<script>alert("invalid series")</script>';
+	
+		}
+		}
 	}
 	}
+	
+	
+		
+	
 
-}
+	}
+	
+
 
 ?>
 
@@ -161,12 +208,24 @@ $('.message a').click(function(){
 </head>
 <body>
 
-<div style="float:right;">
-<ul style="display:inline;list-style:none;">
-<li ><a id ="form.php" href="form.php">Form</a></li>
-<li><a id ="log_out" href="index.php">log out</a></li>
-</ul>
-</div>
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">SMS PANEL</a>
+    </div>
+    <ul class="nav navbar-nav ">
+     
+      <li><a href="Profile.php">Update Profile</a></li>
+      <li><a href="form.php">Bank Details</a></li>
+	    <li><a href="">Your Credits</a></li>
+	  <li><?php  echo '<h3> '.$GLOBALS['credit'].'</h3>' ?><li>
+      <li><a href="logout.php">Log Out</a></li>
+    </ul>
+  </div>
+</nav>
+
+
+
 <div class="login-page">
 
   <div class="form">
@@ -176,8 +235,11 @@ $('.message a').click(function(){
 <?php  echo '<h3>Logged in as '.$_SESSION["username"].'</h3>' ?>
 </div>
    <div>
-    <form class="login-form" method="post" action="" required>
-      <input type="text" placeholder="Enter mobile number" name="mobile" required>
+    <form class="login-form" method="post" action="" onsubmit="return valid()" required>
+	<div>
+      <input type="text" placeholder="Enter mobile number" name="mobile" id="mobile" required>
+	  <div><?php echo'<h6>'.$GLOBALS['msg'].'</h6>'?></div>
+	  </div>
       <input type="text" placeholder="Enter business" name="business"/>
       <button type="submit" name="submit">Submit Data</button>
     
@@ -190,4 +252,3 @@ $('.message a').click(function(){
 
 </body>
 </html>
-
